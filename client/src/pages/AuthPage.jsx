@@ -47,19 +47,26 @@ function AuthPage() {
 
       <div className="auth-toggle">
         <button
-          type="button"
-          className={mode === 'login' ? 'active' : ''}
-          onClick={() => setMode('login')}
-        >
-          log in
-        </button>
-        <button
-          type="button"
-          className={mode === 'register' ? 'active' : ''}
-          onClick={() => setMode('register')}
-        >
-          sign up
-        </button>
+  type="button"
+  className={mode === "login" ? "active" : ""}
+  onClick={() => {
+    setMode("login")
+    setMessage("")
+  }}
+>
+  log in
+</button>
+<button
+  type="button"
+  className={mode === "register" ? "active" : ""}
+  onClick={() => {
+    setMode("register")
+    setMessage("")
+  }}
+>
+  sign up
+</button>
+
       </div>
 
       <form className="auth-form" onSubmit={handleSubmit}>
