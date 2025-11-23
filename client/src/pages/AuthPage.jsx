@@ -1,50 +1,58 @@
-// AuthPage:
-// - lets a user either log in or create a new account
-// - calls my backend at /api/auth/login or /api/auth/register
-// - on success, sends the user to the dashboard where they can see savings goals
+// src/pages/AuthPage.jsx
+// this page lets someone either log in or create an account.
+// it talks directly to my backend auth routes at /api/auth/...
 
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { apiRequest } from '../api.js'
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { apiRequest } from "../api.js"
 
 function AuthPage() {
-  // mode = 'login' or 'register'
-  const [mode, setMode] = useState('login')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [message, setMessage] = useState('')
+  // mode tells me if I'm in "login" or "register" mode
+  const [mode, setMode] = useState("login")
+
+  // basic email + password fields
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+
+  // message for success / error feedback
+  const [message, setMessage] = useState("")
+
+  // loading flag so I can disable the button while the request runs
   const [loading, setLoading] = useState(false)
 
   const navigate = useNavigate()
 
-  // handleSubmit:
-  // - stops the default form submit
-  // - picks the correct API path based on mode (login or register)
-  // - sends { email, password } to the backend
-  // - shows a message and moves the user to the dashboard on success
-
-
+  // this runs when the form is submitted
   async function handleSubmit(e) {
+    // stop the browser from refreshing the page
     e.preventDefault()
-    setMessage('')
+
+    // clear any old message + show loading
+    setMessage("")
     setLoading(true)
 
     try {
-      // pick the right backend route based on mode
-      const path = mode === 'login' ? '/auth/login' : '/auth/register'
+      // choose which backend route I want to call
+      // if mode is "login" → POST /api/auth/login
+      // if mode is "register" → POST /api/auth/register
+      const path = mode === "login" ? "/auth/login" : "/auth/register"
 
+      // send email + password to the backend
       const data = await apiRequest(path, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({ email, password }),
       })
 
-      setMessage(data.message || 'success.')
+      // if the backend sent back a message, show it
+      setMessage(data.message || "success.")
 
-      // after successful auth, send the user back to landing for now
-      navigate('/')
+      // after a successful auth, send the user to the dashboard
+      navigate("/dashboard")
     } catch (err) {
+      // if anything goes wrong, show the error message
       setMessage(err.message)
     } finally {
+      // no matter what happens, stop the loading state
       setLoading(false)
     }
   }
@@ -53,43 +61,34 @@ function AuthPage() {
     <main className="auth">
       <h1>venus auth</h1>
 
-      <p className="auth-subtitle">
-  make a simple account so you can lock savings goals on your dashboard.
-</p>
-
-
+      {/* toggle buttons so the user can switch between login + sign up */}
       <div className="auth-toggle">
         <button
-  type="button"
-  className={mode === "login" ? "active" : ""}
-  onClick={() => {
-    setMode("login")
-    setMessage("")
-  }}
->
-  log in
-</button>
-<button
-  type="button"
-  className={mode === "register" ? "active" : ""}
-  onClick={() => {
-    setMode("register")
-    setMessage("")
-  }}
->
-  sign up
-</button>
+          type="button"
+          className={mode === "login" ? "active" : ""}
+          onClick={() => setMode("login")}
+        >
+          log in
+        </button>
 
+        <button
+          type="button"
+          className={mode === "register" ? "active" : ""}
+          onClick={() => setMode("register")}
+        >
+          sign up
+        </button>
       </div>
 
+      {/* main auth form */}
       <form className="auth-form" onSubmit={handleSubmit}>
         <label>
           email
           <input
             type="email"
-            value={email}
+            value={email}                 // controlled input (React owns the value)
             autoComplete="email"
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)} // update state when user types
             required
           />
         </label>
@@ -99,7 +98,8 @@ function AuthPage() {
           <input
             type="password"
             value={password}
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            // small UX touch: autocomplete field changes based on mode
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
@@ -107,13 +107,14 @@ function AuthPage() {
 
         <button type="submit" disabled={loading}>
           {loading
-            ? 'please wait...'
-            : mode === 'login'
-            ? 'log in'
-            : 'create account'}
+            ? "please wait..."
+            : mode === "login"
+            ? "log in"
+            : "create account"}
         </button>
       </form>
 
+      {/* only show this paragraph if we actually have a message to display */}
       {message && <p className="auth-message">{message}</p>}
 
       <p className="auth-note">
