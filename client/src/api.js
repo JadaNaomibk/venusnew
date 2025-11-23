@@ -1,5 +1,6 @@
 // src/api.js
 // small helper to send requests to my backend API.
+// keeps the base URL in one place and always sends JSON + cookies.
 
 const API_BASE_URL = 'http://localhost:5001/api'
 
