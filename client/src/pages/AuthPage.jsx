@@ -31,6 +31,14 @@ function AuthPage() {
     setMessage("")
     setLoading(true)
 
+        // basic front-end validation so users know the password rules
+    if (password.length < 6) {
+      setLoading(false)
+      setMessage("password should be at least 6 characters.")
+      return
+    }
+
+
     try {
       // choose which backend route I want to call
       // if mode is "login" → POST /api/auth/login
