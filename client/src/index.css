@@ -182,3 +182,72 @@ button:disabled {
   padding: 0.4rem 0.9rem;
   font-size: 0.8rem;
 }
+
+.dashboard {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.total-locked {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.dashboard-section {
+  margin-top: 2rem;
+}
+
+.goal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.goals-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.goal-card {
+  padding: 0.9rem 1rem;
+  border-radius: 0.75rem;
+  background: #0b1018;
+  border: 1px solid #252a3a;
+}
+
+.goal-card h3 {
+  margin-top: 0;
+  margin-bottom: 0.4rem;
+}
+
+.dashboard-message {
+  margin-top: 1.5rem;
+}
+
+.demo-banner {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  background: #141825;
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
