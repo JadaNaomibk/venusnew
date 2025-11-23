@@ -1,8 +1,18 @@
 // server.js
-// backend for my Venus demo, day 2 (landing + auth only).
-// - express app
-// - in-memory "users" list (no database yet)
-// - basic register / login / logout with hashed passwords and a cookie token
+
+// Venus backend (prototype)
+// routes used by the client:
+//
+// GET    /api/health                       → check if backend is alive
+// POST   /api/auth/register                → create a user, set auth cookie
+// POST   /api/auth/login                   → log user in, set auth cookie
+// POST   /api/auth/logout                  → clear auth cookie
+//
+// GET    /api/savings                      → list current user's goals
+// POST   /api/savings                      → create a new savings goal
+// POST   /api/savings/:id/emergency-withdraw → withdraw goal early or at unlock
+//
+// note: in my demo version, users and savings are stored in memory only.
 
 import express from 'express'
 import dotenv from 'dotenv'
