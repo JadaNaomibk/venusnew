@@ -42,30 +42,22 @@ function DashboardPage() {
   }, [])
 
   // helper to fetch goals from backend
-  async function loadGoals() {
+   async function loadGoals() {
     try {
-      setMessage("Goals loaded!")
-      // GET /api/savings
+      setMessage("")
       const data = await apiRequest("/savings", { method: "GET" })
       setGoals(data.goals || [])
     } catch (err) {
-      setMessage(err.message)
+      const msg = err.message || "something went wrong loading goals."
+      setMessage(msg)
 
-          // basic front-end checks
-    const numericAmount = Number(amount)
-    if (Number.isNaN(numericAmount) || numericAmount <= 0) {
-      setMessage("set amount to a positive number.")
-      setLoading(false)
-      return
-    }
-
-
-      // if the user is not logged in, send them back to auth
-      if (err.message.toLowerCase().includes("sorry you're not logged in")) {
+      const lower = msg.toLowerCase()
+      if (lower.includes("not logged in") || lower.includes("invalid or expired")) {
         navigate("/auth")
       }
     }
   }
+
 
   // submit handler for creating a new goal
   async function handleCreateGoal(e) {
