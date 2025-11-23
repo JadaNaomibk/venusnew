@@ -140,6 +140,10 @@ function DashboardPage() {
 
   return (
     <main className="dashboard">
+              <div className="demo-banner">
+        demo only: this version stores data in memory, not a real bank. I will add Baad in time please stay posted.
+      </div>
+
       <header className="dashboard-header">
         <div>
           <h1>venus dashboard</h1>
