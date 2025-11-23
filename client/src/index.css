@@ -251,3 +251,18 @@ button:disabled {
   font-size: 0.8rem;
   opacity: 0.9;
 }
+
+main.landing {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.landing-header h1 {
+  text-align: center;
+  letter-spacing: 0.2em;
+}
+
+.landing-body p {
+  margin-bottom: 0.9rem;
+}
