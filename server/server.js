@@ -16,6 +16,25 @@
 //middleware is used to read authToken cookie , verify JWT  and if valid it outs userId into req so handlers can us it.
 // note: in my demo version, users and savings are stored in memory only.
 
+// savingsByUserId structure:
+// {
+//   "userId123": [
+//      {
+//        id: "goal123",
+//        label: "emergency fund",
+//        amount: 200,
+//        lockUntil: "2025-12-31",
+//        createdAt: "2025-11-23T01:00:00.000Z",
+//        status: "locked" or "withdrawn",
+//        emergencyAllowed: true/false,
+//        emergencyUsed: true/false
+//      },
+//      ...
+//   ],
+//   ...
+// }
+
+
 import express from 'express'
 import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser'
