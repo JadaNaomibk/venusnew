@@ -106,3 +106,10 @@ main.landing {
   font-size: 0.8rem;
   opacity: 0.8;
 }
+
+.auth-subtitle {
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-bottom: 1rem;
+}

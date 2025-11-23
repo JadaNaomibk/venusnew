@@ -45,6 +45,11 @@ function AuthPage() {
     <main className="auth">
       <h1>venus auth</h1>
 
+      <p className="auth-subtitle">
+  make a simple account so you can lock savings goals on your dashboard.
+</p>
+
+
       <div className="auth-toggle">
         <button
   type="button"
