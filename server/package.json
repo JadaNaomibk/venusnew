@@ -1,13 +1,16 @@
 {
   "name": "venus-auth-server",
   "version": "1.0.0",
-  "description": "Auth-only backend for Venus lockable savings demo (day 2: landing + login/signup).",
+  "description": "prototype backend for Venus lockable savings app (auth + savings, in-memory)",
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "start": "node server.js"
   },
+  "keywords": [],
+  "author": "Jada Naomi",
+  "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",

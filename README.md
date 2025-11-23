@@ -1,8 +1,19 @@
-# Venus – Lockable Savings Demo (Day 2)
+# Venus – Lockable Savings Demo 
 
 This is my capstone starter for **Venus**, a lockable savings web app.
 
-### What works today (Day 2)
+## How to run this project locally
+
+1. clone the repo
+
+```bash
+git clone https://github.com/JadaNaomibk/Venus.git
+cd Venus
+
+
+### What works 11.23
+
+- I broke the app twice lol once because i started up a day letter and messep up my files when i  tried to make sure it was being pushed to git ... i ended up makinf a new rep and starting again troublleshooting file will be included .
 
 - Basic **Express backend** with:
   - `GET /api/health` – simple health check for debugging
