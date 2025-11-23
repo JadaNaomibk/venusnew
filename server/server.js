@@ -154,6 +154,12 @@ app.post('/api/auth/logout', (req, res) => {
     .json({ message: 'logged out.' })
 })
 
+// catch-all route for anything that doesn't match above
+// this helps avoid leaking internal errors and gives a clean JSON response
+app.use((req, res) => {
+  res.status(404).json({ message: 'route not found.' })
+})
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
