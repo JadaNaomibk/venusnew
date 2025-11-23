@@ -34,7 +34,7 @@ function AuthPage() {
         // basic front-end validation so users know the password rules
     if (password.length < 6) {
       setLoading(false)
-      setMessage("password should be at least 6 characters.")
+      setMessage("password should be at least 6 characters please.")
       return
     }
 
@@ -52,7 +52,7 @@ function AuthPage() {
       })
 
       // if the backend sent back a message, show it
-      setMessage(data.message || "success.")
+      setMessage(data.message || "success!")
 
       // after a successful auth, send the user to the dashboard
       navigate("/dashboard")
