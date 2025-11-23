@@ -15,9 +15,14 @@ export async function apiRequest(path, options = {}) {
 
   const data = await res.json().catch(() => ({}))
 
-  if (!res.ok) {
-    throw new Error(data.message || 'request failed.')
+    if (!res.ok) {
+    const status = res.status
+    const statusText = res.statusText
+    // build a friendly error message for the UI
+    const baseMessage = data.message || `request failed with status ${status}`
+    throw new Error(`${baseMessage} (${statusText || 'error'})`)
   }
+
 
   return data
 }
