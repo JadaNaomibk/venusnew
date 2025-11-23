@@ -202,12 +202,6 @@ function DashboardPage() {
       <section className="dashboard-section">
         <h2>your savings goals</h2>
 
-        {goals.length === 0 && (
-          <p>
-            you don&apos;t have any goals yet. start by locking a small amount
-            for something specific, like “rent buffer” or “solo trip”.
-          </p>
-        )}
 
 
         <ul className="goals-list">
@@ -227,12 +221,15 @@ function DashboardPage() {
                 <p>status: {goal.status}</p>
                 <p>{emergencyInfo}</p>
 
-                {isLocked && (
-                  <button onClick={() => handleEmergencyWithdraw(goal.id)}>
+                               {isLocked && (
+                  <button
+                    type="button"
+                    onClick={() => handleEmergencyWithdraw(goal.id)}
+                  >
                     emergency withdraw
                   </button>
                 )}
-              </li>
+             </li>
             )
           })}
         </ul>
