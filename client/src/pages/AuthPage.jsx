@@ -112,6 +112,15 @@ function AuthPage() {
             ? "log in"
             : "create account"}
         </button>
+
+              <div className="auth-mode-hint">
+        {mode === "login" ? (
+          <p>new to venus? click “sign up” to make a starter account.</p>
+        ) : (
+          <p>already have an account? click “log in” instead.</p>
+        )}
+      </div>
+
       </form>
 
       {/* only show this paragraph if we actually have a message to display */}
