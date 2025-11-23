@@ -173,15 +173,18 @@ function DashboardPage() {
             />
           </label>
 
-          <label>
+                    <label>
             lock until
             <input
               type="date"
               value={lockUntil}
               onChange={(e) => setLockUntil(e.target.value)}
+              min={new Date().toISOString().slice(0, 10)} // today at minimum
               required
             />
           </label>
+
+
 
           <label className="checkbox-row">
             <input
