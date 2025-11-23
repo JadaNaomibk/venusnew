@@ -44,15 +44,24 @@ function DashboardPage() {
   // helper to fetch goals from backend
   async function loadGoals() {
     try {
-      setMessage("")
+      setMessage("Goals loaded!")
       // GET /api/savings
       const data = await apiRequest("/savings", { method: "GET" })
       setGoals(data.goals || [])
     } catch (err) {
       setMessage(err.message)
 
+          // basic front-end checks
+    const numericAmount = Number(amount)
+    if (Number.isNaN(numericAmount) || numericAmount <= 0) {
+      setMessage("set amount to a positive number.")
+      setLoading(false)
+      return
+    }
+
+
       // if the user is not logged in, send them back to auth
-      if (err.message.toLowerCase().includes("not logged in")) {
+      if (err.message.toLowerCase().includes("sorry you're not logged in")) {
         navigate("/auth")
       }
     }
@@ -78,7 +87,7 @@ function DashboardPage() {
         body: JSON.stringify(body),
       })
 
-      setMessage("savings goal created.")
+      setMessage("savings goal created!")
 
       // reset form fields
       setLabel("")
