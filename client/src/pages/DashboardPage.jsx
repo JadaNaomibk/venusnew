@@ -202,7 +202,13 @@ function DashboardPage() {
       <section className="dashboard-section">
         <h2>your savings goals</h2>
 
-        {goals.length === 0 && <p>you don&apos;t have any goals yet.</p>}
+        {goals.length === 0 && (
+          <p>
+            you don&apos;t have any goals yet. start by locking a small amount
+            for something specific, like “rent buffer” or “solo trip”.
+          </p>
+        )}
+
 
         <ul className="goals-list">
           {goals.map((goal) => {
