@@ -35,3 +35,27 @@ This is my capstone starter for **Venus**, a lockable savings web app.
   - optional emergency withdrawal
 - Replace in-memory data with a **real database** later
 # venusnew
+
+## What this Venus MVP does
+
+- lets a user:
+  - create an account (email + password)
+  - log in and get a secure cookie
+  - create savings goals with:
+    - label (what is this for)
+    - amount
+    - lock-until date
+    - emergency option
+  - see all their goals on a simple dashboard
+  - mark a goal as withdrawn using “emergency withdraw”
+  - log out (clears cookie)
+
+- backend:
+  - Node + Express
+  - in-memory users and goals (no real database yet)
+  - JWT-based auth with httpOnly cookie
+
+- frontend:
+  - React + Vite
+  - routes: `/`, `/auth`, `/dashboard`
+  - uses a tiny `apiRequest` helper for all fetch calls
