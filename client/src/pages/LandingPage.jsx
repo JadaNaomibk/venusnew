@@ -1,8 +1,8 @@
 // src/pages/LandingPage.jsx
-// simple landing page that explains the idea
-// and sends people to the auth screen.
+// super simple landing page for Venus.
+// goal: explain the idea in 1-2 lines and send user to auth.
 
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from "react-router-dom"
 
 function LandingPage() {
   const navigate = useNavigate()
@@ -11,18 +11,18 @@ function LandingPage() {
     <main className="landing">
       <header className="landing-header">
         <h1>VENUS SAVINGS</h1>
-        <p className="tagline">lock it. forget it. reach it.</p>
+        <p className="tagline">lock it on purpose. reach it on purpose.</p>
       </header>
 
       <section className="landing-body">
         <p>
-          this is my lockable savings demo. right now I&apos;m focusing on the core
-          auth flow: making an account and logging in safely. later I can layer the
-          fun savings UI and lock logic on top.
+          venus is my lockable savings demo. you choose an amount, set a lock date,
+          and (in the full version) the app keeps you accountable. right now I&apos;m
+          showing the core auth + savings flow for my capstone.
         </p>
 
         <div className="cta-buttons">
-          <button onClick={() => navigate('/auth')}>get started</button>
+          <button onClick={() => navigate("/auth")}>get started</button>
         </div>
       </section>
     </main>
