@@ -26,6 +26,12 @@ function DashboardPage() {
   // loading flag for the "create goal" button
   const [loading, setLoading] = useState(false)
 
+    // helper to compute how much money is still locked
+  const totalLockedAmount = goals
+    .filter((goal) => goal.status === "locked")
+    .reduce((sum, goal) => sum + Number(goal.amount || 0), 0)
+
+
   const navigate = useNavigate()
 
   // this runs once when the page first loads
@@ -129,6 +135,10 @@ function DashboardPage() {
         <div>
           <h1>venus dashboard</h1>
           <p className="tagline">lock your money on purpose.</p>
+                    <p className="total-locked">
+            total locked: ${totalLockedAmount.toFixed(2)}
+          </p>
+
         </div>
         <button type="button" onClick={handleLogout}>
           log out
