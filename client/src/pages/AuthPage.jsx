@@ -1,6 +1,7 @@
-// src/pages/AuthPage.jsx
-// this page lets someone either log in or create an account.
-// it talks directly to my backend auth routes.
+// AuthPage:
+// - lets a user either log in or create a new account
+// - calls my backend at /api/auth/login or /api/auth/register
+// - on success, sends the user to the dashboard where they can see savings goals
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -15,6 +16,13 @@ function AuthPage() {
   const [loading, setLoading] = useState(false)
 
   const navigate = useNavigate()
+
+  // handleSubmit:
+  // - stops the default form submit
+  // - picks the correct API path based on mode (login or register)
+  // - sends { email, password } to the backend
+  // - shows a message and moves the user to the dashboard on success
+
 
   async function handleSubmit(e) {
     e.preventDefault()
