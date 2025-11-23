@@ -113,3 +113,21 @@ main.landing {
   opacity: 0.8;
   margin-bottom: 1rem;
 }
+
+.demo-banner {
+  text-align: center;
+  font-size: 0.75rem;
+  padding: 0.4rem 0.6rem;
+  background: #240b36;
+  color: #f5f5f5;
+  opacity: 0.95;
+}
+
+.demo-banner {
+  text-align: center;
+  font-size: 0.75rem;
+  padding: 0.4rem 0.6rem;
+  background: #240b36;
+  color: #f5f5f5;
+  opacity: 0.95;
+}
