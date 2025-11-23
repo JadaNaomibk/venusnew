@@ -12,6 +12,8 @@
 // POST   /api/savings                      → create a new savings goal
 // POST   /api/savings/:id/emergency-withdraw → withdraw goal early or at unlock
 //
+
+//middleware is used to read authToken cookie , verify JWT  and if valid it outs userId into req so handlers can us it.
 // note: in my demo version, users and savings are stored in memory only.
 
 import express from 'express'
