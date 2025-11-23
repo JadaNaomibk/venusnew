@@ -1,24 +1,29 @@
 // src/App.jsx
-// two pages: landing + auth. keeping it simple on purpose.
+// three pages for now:
+// - "/"          → LandingPage (explains the app)
+// - "/auth"      → AuthPage (log in / sign up)
+// - "/dashboard" → DashboardPage (view + create savings goals)
 
-import { Routes, Route } from 'react-router-dom'
-import LandingPage from './pages/LandingPage.jsx'
-import AuthPage from './pages/AuthPage.jsx'
+import { Routes, Route } from "react-router-dom"
+import LandingPage from "./pages/LandingPage.jsx"
+import AuthPage from "./pages/AuthPage.jsx"
+import DashboardPage from "./pages/DashboardPage.jsx"
 
-  function App() {
+function App() {
   return (
     <div className="app">
-      <div className="demo-banner">
-        this is a capstone demo. do not use real banking info or passwords.
-      </div>
       <Routes>
+        {/* public landing page */}
         <Route path="/" element={<LandingPage />} />
+
+        {/* auth screen */}
         <Route path="/auth" element={<AuthPage />} />
+
+        {/* basic dashboard for logged-in users */}
         <Route path="/dashboard" element={<DashboardPage />} />
       </Routes>
     </div>
   )
 }
-
 
 export default App
