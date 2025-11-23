@@ -11,6 +11,12 @@ import cors from 'cors'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 
+// very tiny logging helper so I can see what my backend is doing
+function logRequest(req) {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`)
+}
+
+
 dotenv.config()
 
 const app = express()
@@ -26,6 +32,13 @@ const JWT_SECRET = process.env.JWT_SECRET
 // basic middleware: json + cookies
 app.use(express.json())
 app.use(cookieParser())
+
+// log every incoming request (method + url) for debugging
+app.use((req, res, next) => {
+  logRequest(req)
+  next()
+})
+
 
 // allow my React dev server to talk to this API
 app.use(
