@@ -50,10 +50,66 @@ body {
 /* shared layout for main sections */
 main.landing,
 main.auth,
-main.dashboard {
+main.dashboard,
+main.insights {
   max-width: 1100px;
   margin: 0 auto;
   padding: 3.5rem 1.5rem 4.5rem;
+}
+
+/* ========= NAVBAR ========= */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(18px);
+  background: linear-gradient(
+    to right,
+    rgba(9, 9, 20, 0.92),
+    rgba(5, 8, 20, 0.9)
+  );
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.7rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-brand {
+  font-family: var(--font-display);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: var(--text-main);
+}
+
+.nav-links {
+  display: flex;
+  gap: 0.9rem;
+}
+
+.nav-link {
+  text-decoration: none;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.nav-link-active {
+  color: var(--accent);
+  border-color: rgba(64, 214, 160, 0.45);
+  background: rgba(15, 23, 42, 0.9);
 }
 
 /* ========= TYPOGRAPHY ========= */
@@ -78,7 +134,8 @@ h1 {
 
 /* section titles (like “create a savings goal”) */
 .dashboard-section h2,
-main.landing h2 {
+main.landing h2,
+main.insights h2 {
   font-family: var(--font-display);
   font-size: 1.1rem;
   letter-spacing: 0.08em;
@@ -86,26 +143,11 @@ main.landing h2 {
   margin: 0 0 1.25rem;
 }
 
-/* tiny label text (summary bar) */
-.summary-label {
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: 0.7rem;
-  color: var(--text-muted);
-}
-
-.summary-value {
-  font-size: 1.4rem;
-  font-weight: 600;
-}
-
 /* ========= CARDS & CONTAINERS ========= */
 
 .card,
 .dashboard-section,
-.goal-card,
-.summary-item,
-.stat-card {
+.goal-card {
   background: linear-gradient(145deg, var(--bg-elevated), var(--bg-elevated-soft));
   border-radius: 18px;
   border: 1px solid rgba(148, 163, 184, 0.16);
@@ -128,10 +170,6 @@ main.landing {
   margin-bottom: 0.75rem;
 }
 
-.tagline {
-  margin-bottom: 2.2rem;
-}
-
 .landing-body {
   max-width: 560px;
   margin: 0.5rem auto 0;
@@ -146,6 +184,12 @@ main.landing {
   margin-top: 2rem;
   display: flex;
   justify-content: center;
+}
+
+.landing-footnote {
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
 }
 
 /* ========= BUTTONS ========= */
@@ -183,7 +227,7 @@ button:disabled {
   box-shadow: none;
 }
 
-/* secondary / outline button (used on goal cards, logout, etc.) */
+/* secondary / outline button (used on goal cards) */
 .secondary-button {
   background: transparent;
   border-radius: 999px;
@@ -200,6 +244,13 @@ button:disabled {
 
 main.auth {
   max-width: 460px;
+}
+
+.logged-note {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-bottom: 0.4rem;
 }
 
 /* toggle buttons (login / sign up) */
@@ -245,8 +296,7 @@ main.auth {
   text-transform: lowercase;
 }
 
-.auth-form input,
-.auth-form select {
+.auth-form input {
   padding: 0.65rem 0.9rem;
   border-radius: 10px;
   border: 1px solid #1f2937;
@@ -263,8 +313,7 @@ main.auth {
   color: rgba(148, 163, 184, 0.7);
 }
 
-.auth-form input:focus,
-.auth-form select:focus {
+.auth-form input:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 1px rgba(64, 214, 160, 0.5);
@@ -290,6 +339,8 @@ main.dashboard {
   padding-top: 3rem;
 }
 
+/* header text is just h1 + .dashboard-subtitle */
+
 .dashboard-header {
   text-align: center;
 }
@@ -298,24 +349,41 @@ main.dashboard {
   margin-top: 0.35rem;
 }
 
-/* ====== STATS ROW (TOP SUMMARY) ====== */
-/* Your JSX uses: <section className="stats-row"> with .stat-card children */
+.logout-button {
+  margin-top: 1.2rem;
+}
 
-.stats-row,
-.summary-bar {
+/* summary bar (top stats) */
+
+.stats-row {
   display: flex;
   flex-wrap: wrap;
   gap: 1.25rem;
   margin: 2.2rem 0 2.4rem;
 }
 
-.stat-card,
-.summary-item {
+.stat-card {
   flex: 1 1 220px;
   padding: 1.1rem 1.4rem;
+  border-radius: 18px;
+  background: linear-gradient(145deg, var(--bg-elevated), var(--bg-elevated-soft));
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+}
+
+.stat-label {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 600;
 }
 
 /* grid: left = form, right = goals list */
@@ -406,61 +474,197 @@ main.dashboard {
   padding: 1rem 1.2rem 1rem;
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) auto;
-  grid-template-rows: auto auto auto;
   column-gap: 1rem;
-  row-gap: 0.35rem;
+  row-gap: 0.4rem;
   align-items: center;
 }
 
-/* ========= HEADER / NAV ========= */
-
-.site-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  backdrop-filter: blur(16px);
-  background: rgba(3, 7, 18, 0.85);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+.goal-card-main {
+  grid-column: 1 / 2;
 }
 
-.site-header-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0.75rem 1.5rem;
-  display: flex;
+.goal-card h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+}
+
+.goal-amount {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+}
+
+.goal-meta {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0.35rem 0 0;
+}
+
+/* pill for status + emergency */
+
+.status-pill {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.logo {
-  font-family: var(--font-display);
-  letter-spacing: 0.18em;
+  justify-content: center;
+  padding: 0.18rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-size: 0.85rem;
+  border: 1px solid rgba(148, 163, 184, 0.5);
   color: var(--text-muted);
+  margin-right: 0.3rem;
+  margin-top: 0.2rem;
 }
 
-.main-nav {
-  display: flex;
-  gap: 1rem;
-  font-size: 0.85rem;
-  text-transform: lowercase;
-}
-
-.main-nav a {
-  color: var(--text-muted);
-  text-decoration: none;
-  padding-bottom: 0.15rem;
-  border-bottom: 1px solid transparent;
-}
-
-.main-nav a.active {
+.status-pill.locked {
+  border-color: var(--accent);
   color: var(--accent);
-  border-bottom-color: var(--accent);
 }
 
-/* extra pill for withdraw count warning */
-.status-pill.warning {
-  border-color: rgba(250, 204, 21, 0.85);
+.status-pill.withdrawn {
+  border-color: rgba(248, 113, 113, 0.8);
+  color: #fecaca;
+}
+
+.status-pill.emergency {
+  border-color: rgba(250, 204, 21, 0.9);
   color: var(--warning);
+}
+
+.status-pill.penalty {
+  border-color: rgba(248, 113, 113, 0.8);
+  color: #fecaca;
+}
+
+/* status block & button */
+
+.goal-status-block {
+  grid-column: 2 / 3;
+  justify-self: flex-end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.goal-card .secondary-button {
+  margin-top: 0.45rem;
+  font-size: 0.8rem;
+}
+
+/* empty state + dashboard message */
+
+.empty-state {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+.dashboard-message {
+  margin-top: 1.3rem;
+  font-size: 0.9rem;
+}
+
+/* ========= PROGRESS BAR ========= */
+
+.progress-shell {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #020617;
+  overflow: hidden;
+  border: 1px solid #1f2937;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+  transition: width 0.3s ease;
+}
+
+/* ========= CHECK UPLOAD / TIP PANEL ========= */
+
+.check-upload {
+  margin-top: 1.3rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  border: 1px dashed rgba(148, 163, 184, 0.5);
+  background: rgba(15, 23, 42, 0.6);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.check-upload strong {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+/* Reuse this style for the tip panel note */
+.file-note {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ========= INSIGHTS PAGE ========= */
+
+main.insights {
+  padding-top: 3rem;
+}
+
+.insights-body {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.insights-text p {
+  color: var(--text-muted);
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+/* ========= RESPONSIVE ========= */
+
+@media (max-width: 900px) {
+  main.landing,
+  main.auth,
+  main.dashboard,
+  main.insights {
+    padding-inline: 1.1rem;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stats-row {
+    flex-direction: column;
+  }
+
+  .nav-inner {
+    padding-inline: 1.1rem;
+  }
+
+  .nav-links {
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 600px) {
+  h1 {
+    letter-spacing: 0.12em;
+  }
+
+  .goal-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .goal-status-block {
+    grid-column: 1 / -1;
+    align-items: flex-start;
+    margin-top: 0.5rem;
+  }
+
+  .goal-card .secondary-button {
+    justify-self: flex-start;
+    margin-top: 0.5rem;
+  }
 }

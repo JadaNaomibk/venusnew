@@ -1,48 +1,53 @@
-// client/src/pages/AuthPage.jsx
-// login / sign-up screen that talks to the backend auth routes
+// src/pages/AuthPage.jsx
+// lets someone log in or sign up, and talks to the backend auth routes.
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { apiRequest } from '../api.js';
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { apiRequest } from '../api.js'
 
 function AuthPage() {
-  const [mode, setMode] = useState('login'); // "login" or "register"
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [depositMethod, setDepositMethod] = useState('');
-  const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
+  // "mode" controls whether the form is in login or sign-up mode
+  const [mode, setMode] = useState('login') // "login" or "register"
 
-  const navigate = useNavigate();
+  // basic form fields
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+
+  // feedback + loading state
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const navigate = useNavigate()
 
   async function handleSubmit(e) {
-    e.preventDefault();
-    setMessage('');
-    setLoading(true);
+    e.preventDefault()
+    setMessage('')
+    setLoading(true)
 
     try {
-      const path = mode === 'login' ? '/auth/login' : '/auth/register';
+      // choose the backend path based on the mode
+      const path = mode === 'login' ? '/auth/login' : '/auth/register'
 
       const data = await apiRequest(path, {
         method: 'POST',
-        body: JSON.stringify({ email, password })
-      });
+        body: JSON.stringify({ email, password }),
+      })
 
-      setMessage(data.message || 'success.');
-      navigate('/dashboard');
+      // show whatever message the server sent back
+      setMessage(data.message || 'success.')
+
+      // after auth, send them to the dashboard
+      navigate('/dashboard')
     } catch (err) {
-      setMessage(err.message);
+      setMessage(err.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
   const titleText =
-    mode === 'login'
-      ? 'welcome back to venus'
-      : 'create your venus account';
-
-  const buttonText = mode === 'login' ? 'log in' : 'create account';
+    mode === 'login' ? 'welcome back to venus' : 'create your venus account'
+  const buttonText = mode === 'login' ? 'log in' : 'create account'
 
   return (
     <main className="auth">
@@ -89,18 +94,6 @@ function AuthPage() {
           />
         </label>
 
-        <label>
-          deposit method
-          <select
-            value={depositMethod}
-            onChange={(e) => setDepositMethod(e.target.value)}
-          >
-            <option value="">select method</option>
-            <option value="bank">bank transfer (mock)</option>
-            <option value="check-upload">upload check (mock)</option>
-          </select>
-        </label>
-
         <button type="submit" disabled={loading}>
           {loading ? 'please wait...' : buttonText}
         </button>
@@ -109,11 +102,11 @@ function AuthPage() {
       {message && <p className="auth-message">{message}</p>}
 
       <p className="auth-note">
-        venus is in prototype mode. please don&apos;t reuse real banking
+        This is a practice environment. Please don&apos;t reuse real banking
         passwords here.
       </p>
     </main>
-  );
+  )
 }
 
-export default AuthPage;
+export default AuthPage
