@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 const QUOTES = [
   {
     id: 1,
-    text: 'Small, locked amounts add up faster than “I’ll start next month.”',
+    text: 'We locked up your money and threw away the key!”',
   },
   {
     id: 2,
@@ -14,7 +14,7 @@ const QUOTES = [
   },
   {
     id: 3,
-    text: 'Treat your savings goal like rent: non-negotiable, non-touchable.',
+    text: 'e locked up your money and threw away the key!',
   },
   {
     id: 4,
