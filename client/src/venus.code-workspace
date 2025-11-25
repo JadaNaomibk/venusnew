@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../venus-clean/client"
+		},
+		{
+			"path": "../../../venus-clean/server"
+		}
+	],
+	"settings": {}
+}

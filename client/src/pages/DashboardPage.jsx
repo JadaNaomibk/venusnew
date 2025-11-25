@@ -1,26 +1,40 @@
 // src/pages/DashboardPage.jsx
-// main logged-in dashboard for Venus lockable savings.
-// data is stored locally in the browser to simulate real goals.
+// dashboard page for Venus.
+// this version still uses ONLY FRONTEND STATE (localStorage)
+// for savings goals – no real money, no real bank connections.
 
 import { useState, useEffect } from "react";
+// you can wire this in later if you want to use it
+// import { CheckUploadBox } from "../components/CheckUploadBox.jsx";
 
 function DashboardPage() {
-  // 1. form state
-  const [label, setLabel] = useState("");
-  const [amount, setAmount] = useState("");
-  const [lockUntil, setLockUntil] = useState("");
+  // -----------------------------
+  // 1. state for the savings form
+  // -----------------------------
+  const [label, setLabel] = useState("");          // goal name (ex: "Puerto Rico trip")
+  const [amount, setAmount] = useState("");        // how much to lock right now
+  const [targetAmount, setTargetAmount] = useState(""); // total goal (ex: 5000)
+  const [lockUntil, setLockUntil] = useState("");  // date string like "2025-12-31"
   const [emergencyAllowed, setEmergencyAllowed] = useState(true);
 
-  // 2. goals + ui feedback
-  const [goals, setGoals] = useState([]);
-  const [message, setMessage] = useState("");
+  // -----------------------------
+  // 2. state for the goals list
+  // -----------------------------
+  const [goals, setGoals] = useState([]);          // array of goal objects
+  const [message, setMessage] = useState("");      // success / warning text for the user
 
-  // 3. load any stored goals from localStorage
+  // how many emergency withdraws the user has done (across all goals)
+  const [withdrawEvents, setWithdrawEvents] = useState(0);
+
+  // -------------------------------------------
+  // 3. load any saved goals + withdraw count
+  //    from localStorage on first render
+  // -------------------------------------------
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("venusGoals");
-      if (stored) {
-        const parsed = JSON.parse(stored);
+      const storedGoals = localStorage.getItem("venusGoals");
+      if (storedGoals) {
+        const parsed = JSON.parse(storedGoals);
         if (Array.isArray(parsed)) {
           setGoals(parsed);
         }
@@ -28,9 +42,23 @@ function DashboardPage() {
     } catch (err) {
       console.error("error reading venusGoals from localStorage:", err);
     }
+
+    try {
+      const storedCount = localStorage.getItem("venusWithdrawEvents");
+      if (storedCount != null) {
+        const parsedCount = Number(storedCount);
+        if (!Number.isNaN(parsedCount)) {
+          setWithdrawEvents(parsedCount);
+        }
+      }
+    } catch (err) {
+      console.error("error reading withdrawEvents from localStorage:", err);
+    }
   }, []);
 
-  // 4. persist goals whenever they change
+  // ----------------------------------------------------
+  // 4. whenever "goals" changes, save them to storage
+  // ----------------------------------------------------
   useEffect(() => {
     try {
       localStorage.setItem("venusGoals", JSON.stringify(goals));
@@ -39,27 +67,52 @@ function DashboardPage() {
     }
   }, [goals]);
 
-  function createGoalObject({ label, amount, lockUntil, emergencyAllowed }) {
+  // ----------------------------------------------------
+  // 5. whenever withdrawEvents changes, save that too
+  // ----------------------------------------------------
+  useEffect(() => {
+    try {
+      localStorage.setItem("venusWithdrawEvents", String(withdrawEvents));
+    } catch (err) {
+      console.error("error saving withdrawEvents to localStorage:", err);
+    }
+  }, [withdrawEvents]);
+
+  // ------------------------------------------------
+  // helper: build one goal object in a consistent way
+  // ------------------------------------------------
+  function createGoalObject({ label, amount, targetAmount, lockUntil, emergencyAllowed }) {
     const now = new Date();
+
+    const numericAmount = Number(amount);
+    // if no explicit target is given, treat the current amount as the target
+    const numericTarget = targetAmount
+      ? Number(targetAmount)
+      : numericAmount;
 
     return {
       id: String(now.getTime()) + "-" + Math.random().toString(16).slice(2),
       label: String(label).trim(),
-      amount: Number(amount),
-      lockUntil,
+      amount: numericAmount,          // how much is currently locked
+      targetAmount: numericTarget,    // full goal amount ("I want to reach 5000")
+      lockUntil,                      // date string from the input
       createdAt: now.toISOString(),
-      status: "locked", // "locked" or "withdrawn"
+      status: "locked",               // "locked" or "withdrawn"
       emergencyAllowed: !!emergencyAllowed,
-      emergencyUsed: false,
+      emergencyUsed: false,           // becomes true if this goal was withdrawn
     };
   }
 
+  // ------------------------------------------------
+  // submit handler for the "create goal" form
+  // ------------------------------------------------
   function handleCreateGoal(event) {
     event.preventDefault();
     setMessage("");
 
+    // simple validation
     if (!label || !amount || !lockUntil) {
-      setMessage("please complete all fields before locking a goal.");
+      setMessage("please fill out all the fields first.");
       return;
     }
 
@@ -69,31 +122,64 @@ function DashboardPage() {
       return;
     }
 
+    let numericTarget = numericAmount;
+    if (targetAmount) {
+      numericTarget = Number(targetAmount);
+      if (Number.isNaN(numericTarget) || numericTarget <= 0) {
+        setMessage("target amount must be a positive number.");
+        return;
+      }
+    }
+
     const newGoal = createGoalObject({
       label,
       amount: numericAmount,
+      targetAmount: numericTarget,
       lockUntil,
       emergencyAllowed,
     });
 
+    // prepend new goal
     setGoals((prev) => [newGoal, ...prev]);
 
+    // clear the form
     setLabel("");
     setAmount("");
+    setTargetAmount("");
     setLockUntil("");
     setEmergencyAllowed(true);
 
     setMessage("new savings goal locked.");
   }
 
+  // ------------------------------------------------
+  // click handler for "emergency withdraw" button
+  // global limit: if you use emergency withdraw too many times,
+  // you start getting blocked + warned (penalty vibe).
+  // ------------------------------------------------
   function handleEmergencyWithdraw(goalId) {
     setMessage("");
 
-    setGoals((prev) =>
-      prev.map((goal) => {
+    // hard limit: after 3 emergency withdraws, we block more
+    if (withdrawEvents >= 3) {
+      setMessage(
+        "you've reached the emergency withdraw limit. in a real app, more early unlocks would trigger penalty fees."
+      );
+      return;
+    }
+
+    let didWithdraw = false;
+
+    setGoals((prevGoals) =>
+      prevGoals.map((goal) => {
         if (goal.id !== goalId) return goal;
 
-        if (goal.status === "withdrawn") return goal;
+        // already withdrawn? don't double-count
+        if (goal.status === "withdrawn") {
+          return goal;
+        }
+
+        didWithdraw = true;
 
         return {
           ...goal,
@@ -103,22 +189,30 @@ function DashboardPage() {
       })
     );
 
-    setMessage("goal marked as withdrawn.");
+    // only update the counter if we actually changed a goal
+    if (didWithdraw) {
+      setWithdrawEvents((prevCount) => {
+        const newCount = prevCount + 1;
+
+        if (newCount > 2) {
+          setMessage(
+            "warning: you've used emergency withdraw multiple times. in a real app, future unlocks would incur a penalty percentage."
+          );
+        } else {
+          setMessage("goal withdrawn from lock.");
+        }
+
+        return newCount;
+      });
+    }
   }
 
-  // tiny helper: how many days remain until lock date
-  function getDaysRemaining(lockUntil) {
-    if (!lockUntil) return null;
-    const today = new Date();
-    const lockDate = new Date(lockUntil + "T00:00:00");
-    const diffMs = lockDate - today;
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    return diffDays;
-  }
-
+  // ------------------------------------------------
+  // helper: compute total locked amount (only locked goals)
+  // ------------------------------------------------
   const totalLocked = goals
     .filter((goal) => goal.status === "locked")
-    .reduce((sum, goal) => sum + goal.amount, 0);
+    .reduce((sum, goal) => sum + (Number(goal.amount) || 0), 0);
 
   return (
     <main className="dashboard">
@@ -128,20 +222,19 @@ function DashboardPage() {
             textAlign: "center",
             marginTop: "0.5rem",
             color: "var(--text-muted)",
-            fontSize: "0.8rem",
           }}
         >
-          signed in · personal savings workspace
+          logged in
         </p>
 
         <h1>your venus dashboard</h1>
-        <p className="dashboard-subtitle">
-          see every goal in one place, on purpose – not by accident.
-        </p>
 
         <button
           onClick={() => {
+            // clear local demo data on logout
             localStorage.removeItem("venusGoals");
+            localStorage.removeItem("venusWithdrawEvents");
+
             fetch("http://localhost:5001/api/auth/logout", {
               method: "POST",
               credentials: "include",
@@ -152,24 +245,39 @@ function DashboardPage() {
           className="secondary-button"
           style={{ marginTop: "1rem" }}
         >
-          sign out
+          logout
         </button>
+
+        <p className="dashboard-subtitle">
+          lock small amounts on purpose, not by accident.
+        </p>
       </header>
 
-      {/* summary row */}
+      {/* summary cards at the top */}
       <section className="summary-bar">
         <div className="summary-item">
-          <span className="summary-label">active goals</span>
+          <span className="summary-label">goals locked</span>
           <span className="summary-value">{goals.length}</span>
         </div>
         <div className="summary-item">
           <span className="summary-label">total locked</span>
           <span className="summary-value">${totalLocked.toFixed(2)}</span>
         </div>
+        <div className="summary-item">
+          <span className="summary-label">emergency withdraws</span>
+          <span className="summary-value">{withdrawEvents}</span>
+        </div>
       </section>
 
+      {withdrawEvents >= 2 && (
+        <p className="dashboard-warning">
+          you&apos;ve used emergency withdraw more than once. in a real app,
+          future early unlocks would be limited or charged a fee to protect your savings.
+        </p>
+      )}
+
       <section className="dashboard-grid">
-        {/* left: create goal */}
+        {/* form column */}
         <section className="dashboard-section">
           <h2>create a savings goal</h2>
 
@@ -180,13 +288,13 @@ function DashboardPage() {
                 type="text"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                placeholder="ex: puerto rico flight, rent buffer, camera"
+                placeholder="ex: flight, rent buffer, camera"
                 required
               />
             </label>
 
             <label>
-              amount to lock
+              amount to lock now
               <input
                 type="number"
                 value={amount}
@@ -194,6 +302,18 @@ function DashboardPage() {
                 min="1"
                 step="0.01"
                 required
+              />
+            </label>
+
+            <label>
+              target amount (total goal)
+              <input
+                type="number"
+                value={targetAmount}
+                onChange={(e) => setTargetAmount(e.target.value)}
+                min="1"
+                step="0.01"
+                placeholder="ex: 5000"
               />
             </label>
 
@@ -220,40 +340,53 @@ function DashboardPage() {
           </form>
         </section>
 
-        {/* right: goals list */}
+        {/* goals list column */}
         <section className="dashboard-section">
           <h2>your savings goals</h2>
 
           {goals.length === 0 && (
             <p className="empty-state">
-              no goals yet. start small – pick one thing you care about, lock a
-              number, and practice not touching it.
+              you don&apos;t have any locked goals yet. start with something tiny.
             </p>
           )}
 
           <ul className="goals-list">
             {goals.map((goal) => {
-              const daysRemaining = getDaysRemaining(goal.lockUntil);
+              const target = Number(goal.targetAmount) || Number(goal.amount) || 0;
+              const current = Number(goal.amount) || 0;
+              const progress =
+                target > 0
+                  ? Math.min(100, Math.round((current / target) * 100))
+                  : 0;
 
               return (
                 <li key={goal.id} className="goal-card">
                   <div className="goal-card-main">
                     <h3>{goal.label}</h3>
-                    <p className="goal-amount">
-                      ${goal.amount.toFixed(2)}
-                    </p>
-                    <p className="goal-meta">
-                      lock until: {goal.lockUntil}
-                      {Number.isFinite(daysRemaining) && (
-                        <>
-                          {" "}
-                          ·{" "}
-                          {daysRemaining > 0
-                            ? `${daysRemaining} day${daysRemaining === 1 ? "" : "s"} remaining`
-                            : "lock date reached"}
-                        </>
+                    <p className="goal-amount">${current.toFixed(2)} locked</p>
+                    {target > 0 && (
+                      <p className="goal-meta">
+                        goal: ${target.toFixed(2)} &nbsp; • &nbsp; lock until:{" "}
+                        {goal.lockUntil}
+                      </p>
+                    )}
+
+                    {/* progress bar + text like "$25 out of $5000 saved (0.5%)" */}
+                    <div className="goal-progress">
+                      <div className="goal-progress-bar">
+                        <div
+                          className="goal-progress-fill"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+
+                      {target > 0 && (
+                        <p className="goal-progress-text">
+                          ${current.toFixed(2)} out of ${target.toFixed(2)} saved (
+                          {progress}%)
+                        </p>
                       )}
-                    </p>
+                    </div>
                   </div>
 
                   <div className="goal-status-block">
@@ -268,9 +401,7 @@ function DashboardPage() {
 
                     {goal.emergencyAllowed && (
                       <span className="status-pill emergency">
-                        {goal.emergencyUsed
-                          ? "emergency used"
-                          : "emergency allowed"}
+                        {goal.emergencyUsed ? "emergency used" : "emergency allowed"}
                       </span>
                     )}
 
@@ -279,6 +410,7 @@ function DashboardPage() {
                         type="button"
                         className="secondary-button"
                         onClick={() => handleEmergencyWithdraw(goal.id)}
+                        disabled={withdrawEvents >= 3}
                       >
                         emergency withdraw
                       </button>
@@ -292,18 +424,6 @@ function DashboardPage() {
       </section>
 
       {message && <p className="dashboard-message">{message}</p>}
-
-      <p
-        style={{
-          marginTop: "0.75rem",
-          fontSize: "0.75rem",
-          color: "var(--text-muted)",
-          textAlign: "center",
-        }}
-      >
-        venus currently runs locally in your browser as a savings practice
-        space. numbers shown here are for your planning and tracking.
-      </p>
     </main>
   );
 }
