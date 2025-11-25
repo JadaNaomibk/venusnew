@@ -1,55 +1,64 @@
-// client/src/pages/DashboardPage.jsx
-// dashboard page for Venus.
-// this version uses the backend API + MongoDB to store savings goals.
+// src/pages/DashboardPage.jsx
+// Venus dashboard – lockable savings demo using ONLY local state + localStorage
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiRequest } from '../api.js';
+import SavingsQuote from '../components/SavingsQuote.jsx';
+
+function createGoalObject({ label, amount, lockUntil, emergencyAllowed }) {
+  const now = new Date();
+
+  return {
+    id: String(now.getTime()) + '-' + Math.random().toString(16).slice(2),
+    label: String(label).trim(),
+    amount: Number(amount),
+    lockUntil, // date string
+    createdAt: now.toISOString(),
+    status: 'locked', // 'locked' | 'withdrawn'
+    emergencyAllowed: !!emergencyAllowed,
+    emergencyUsed: false,
+    withdrawCount: 0,
+  };
+}
 
 function DashboardPage() {
+  const navigate = useNavigate();
+
+  // form state
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
   const [lockUntil, setLockUntil] = useState('');
   const [emergencyAllowed, setEmergencyAllowed] = useState(true);
 
+  // goals + messaging
   const [goals, setGoals] = useState([]);
   const [message, setMessage] = useState('');
-  const [loadingGoals, setLoadingGoals] = useState(true);
 
-  const navigate = useNavigate();
-
-  // load goals on mount
+  // load from localStorage on first render
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadGoals() {
-      setLoadingGoals(true);
-      setMessage('');
-
-      try {
-        const data = await apiRequest('/goals', { method: 'GET' });
-        if (!cancelled) {
-          setGoals(Array.isArray(data.goals) ? data.goals : []);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setMessage(err.message);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoadingGoals(false);
+    try {
+      const stored = localStorage.getItem('venusGoals');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setGoals(parsed);
         }
       }
+    } catch (err) {
+      console.error('error reading venusGoals from localStorage:', err);
     }
-
-    loadGoals();
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
-  async function handleCreateGoal(event) {
+  // save to localStorage any time goals change
+  useEffect(() => {
+    try {
+      localStorage.setItem('venusGoals', JSON.stringify(goals));
+    } catch (err) {
+      console.error('error saving venusGoals to localStorage:', err);
+    }
+  }, [goals]);
+
+  function handleCreateGoal(event) {
     event.preventDefault();
     setMessage('');
 
@@ -64,88 +73,68 @@ function DashboardPage() {
       return;
     }
 
-    try {
-      const data = await apiRequest('/goals', {
-        method: 'POST',
-        body: JSON.stringify({
-          label,
-          amount: numericAmount,
-          lockUntil,
-          emergencyAllowed
-        })
-      });
+    const newGoal = createGoalObject({
+      label,
+      amount: numericAmount,
+      lockUntil,
+      emergencyAllowed,
+    });
 
-      if (data.goal) {
-        setGoals((prev) => [data.goal, ...prev]);
-      }
+    setGoals((prev) => [newGoal, ...prev]);
 
-      setLabel('');
-      setAmount('');
-      setLockUntil('');
-      setEmergencyAllowed(true);
+    setLabel('');
+    setAmount('');
+    setLockUntil('');
+    setEmergencyAllowed(true);
 
-      setMessage('new savings goal locked.');
-    } catch (err) {
-      setMessage(err.message);
-    }
+    setMessage('new savings goal locked.');
   }
 
-  async function handleEmergencyWithdraw(goalId) {
+  function handleEmergencyWithdraw(goalId) {
     setMessage('');
 
-    try {
-      const data = await apiRequest(`/goals/${goalId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ action: 'emergency-withdraw' })
-      });
+    setGoals((prev) =>
+      prev.map((goal) => {
+        if (goal.id !== goalId) return goal;
 
-      if (data.goal) {
-        setGoals((prev) =>
-          prev.map((g) => (g.id === data.goal.id ? data.goal : g))
-        );
-      }
+        if (goal.status === 'withdrawn') {
+          return goal;
+        }
 
-      setMessage(
-        'goal withdrawn from lock (demo only, no real money is moving).'
-      );
-    } catch (err) {
-      setMessage(err.message);
-    }
-  }
+        const newWithdrawCount = (goal.withdrawCount || 0) + 1;
 
-  async function handleDeleteGoal(goalId) {
-    setMessage('');
+        return {
+          ...goal,
+          status: 'withdrawn',
+          emergencyUsed: true,
+          withdrawCount: newWithdrawCount,
+        };
+      }),
+    );
 
-    try {
-      await apiRequest(`/goals/${goalId}`, {
-        method: 'DELETE'
-      });
-
-      setGoals((prev) => prev.filter((g) => g.id !== goalId));
-      setMessage('goal deleted.');
-    } catch (err) {
-      setMessage(err.message);
-    }
-  }
-
-  async function handleLogout() {
-    try {
-      await apiRequest('/auth/logout', { method: 'POST' });
-    } catch (_) {
-      // ignore errors on logout
-    } finally {
-      setGoals([]);
-      navigate('/auth');
-    }
+    setMessage(
+      'goal withdrawn from lock (demo only, no real money is moved).',
+    );
   }
 
   const totalLocked = goals
-    .filter((goal) => goal.status === 'locked')
-    .reduce((sum, goal) => sum + Number(goal.amount || 0), 0);
+    .filter((g) => g.status === 'locked')
+    .reduce((sum, g) => sum + g.amount, 0);
 
-  const totalWithdrawn = goals
-    .filter((goal) => goal.status === 'withdrawn')
-    .reduce((sum, goal) => sum + Number(goal.amount || 0), 0);
+  const totalWithdrawals = goals.reduce(
+    (sum, g) => sum + (g.withdrawCount || 0),
+    0,
+  );
+
+  function handleLogout() {
+    // in this mock version, just clear local goals + go back to auth
+    try {
+      localStorage.removeItem('venusGoals');
+    } catch (err) {
+      console.error('error clearing venusGoals on logout:', err);
+    }
+    navigate('/auth');
+  }
 
   return (
     <main className="dashboard">
@@ -154,27 +143,30 @@ function DashboardPage() {
           style={{
             textAlign: 'center',
             marginTop: '0.5rem',
-            color: 'var(--text-muted)'
+            color: 'var(--text-muted)',
+            fontSize: '0.8rem',
           }}
         >
-          logged in (demo mode – no real bank connections)
+          logged in (demo mode – no real bank accounts connected)
         </p>
 
         <h1>your venus dashboard</h1>
+
+        <p className="dashboard-subtitle">
+          lock money on purpose, not by accident. practice leaving it alone.
+        </p>
 
         <button
           onClick={handleLogout}
           className="secondary-button"
           style={{ marginTop: '1rem' }}
+          type="button"
         >
-          logout
+          log out
         </button>
-
-        <p className="dashboard-subtitle">
-          lock small amounts on purpose, not by accident.
-        </p>
       </header>
 
+      {/* summary bar */}
       <section className="summary-bar">
         <div className="summary-item">
           <span className="summary-label">goals locked</span>
@@ -182,19 +174,16 @@ function DashboardPage() {
         </div>
         <div className="summary-item">
           <span className="summary-label">total locked</span>
-          <span className="summary-value">
-            ${totalLocked.toFixed(2)}
-          </span>
+          <span className="summary-value">${totalLocked.toFixed(2)}</span>
         </div>
         <div className="summary-item">
-          <span className="summary-label">total withdrawn</span>
-          <span className="summary-value">
-            ${totalWithdrawn.toFixed(2)}
-          </span>
+          <span className="summary-label">emergency withdrawals</span>
+          <span className="summary-value">{totalWithdrawals}</span>
         </div>
       </section>
 
       <section className="dashboard-grid">
+        {/* left side: create goal form */}
         <section className="dashboard-section">
           <h2>create a savings goal</h2>
 
@@ -205,7 +194,7 @@ function DashboardPage() {
                 type="text"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                placeholder="ex: flight, rent buffer, camera"
+                placeholder="ex: puerto rico flight, rent buffer, camera"
                 required
               />
             </label>
@@ -241,18 +230,18 @@ function DashboardPage() {
               allow emergency withdrawal before the lock date
             </label>
 
-            <button type="submit">lock this money</button>
+            <button type="submit">lock this money (demo)</button>
           </form>
+
+          {/* motivational block */}
+          <SavingsQuote />
         </section>
 
+        {/* right side: goals list */}
         <section className="dashboard-section">
           <h2>your savings goals</h2>
 
-          {loadingGoals && (
-            <p className="empty-state">loading your goals...</p>
-          )}
-
-          {!loadingGoals && goals.length === 0 && (
+          {goals.length === 0 && (
             <p className="empty-state">
               you don&apos;t have any locked goals yet. start with something
               tiny.
@@ -260,64 +249,58 @@ function DashboardPage() {
           )}
 
           <ul className="goals-list">
-            {goals.map((goal) => (
-              <li key={goal.id} className="goal-card">
-                <div>
-                  <h3>{goal.label}</h3>
-                  <p className="goal-amount">
-                    ${Number(goal.amount || 0).toFixed(2)}
-                  </p>
-                  <p className="goal-meta">
-                    lock until: {goal.lockUntil}
-                  </p>
-                </div>
+            {goals.map((goal) => {
+              const withdrawCount = goal.withdrawCount || 0;
 
-                <div className="goal-status-block">
-                  <span
-                    className={
-                      'status-pill ' +
-                      (goal.status === 'locked' ? 'locked' : 'withdrawn')
-                    }
-                  >
-                    {goal.status}
-                  </span>
+              return (
+                <li key={goal.id} className="goal-card">
+                  <div className="goal-card-main">
+                    <h3>{goal.label}</h3>
+                    <p className="goal-amount">
+                      ${goal.amount.toFixed(2)}
+                    </p>
+                    <p className="goal-meta">
+                      lock until: {goal.lockUntil}
+                    </p>
+                  </div>
 
-                  {goal.emergencyAllowed && (
-                    <span className="status-pill emergency">
-                      {goal.emergencyUsed
-                        ? 'emergency used'
-                        : 'emergency allowed'}
+                  <div className="goal-status-block">
+                    <span
+                      className={
+                        'status-pill ' +
+                        (goal.status === 'locked' ? 'locked' : 'withdrawn')
+                      }
+                    >
+                      {goal.status}
                     </span>
-                  )}
 
-                  {goal.withdrawCount > 0 && (
-                    <span className="status-pill warning">
-                      withdrawals: {goal.withdrawCount}
-                    </span>
-                  )}
+                    {goal.emergencyAllowed && (
+                      <span className="status-pill emergency">
+                        {goal.emergencyUsed
+                          ? 'emergency used'
+                          : 'emergency allowed'}
+                      </span>
+                    )}
 
-                  <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
+                    {withdrawCount > 0 && (
+                      <span className="status-pill">
+                        withdrawals: {withdrawCount}
+                      </span>
+                    )}
+
                     {goal.status === 'locked' && (
                       <button
                         type="button"
                         className="secondary-button"
                         onClick={() => handleEmergencyWithdraw(goal.id)}
                       >
-                        emergency withdraw
+                        emergency withdraw (demo)
                       </button>
                     )}
-
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => handleDeleteGoal(goal.id)}
-                    >
-                      delete
-                    </button>
                   </div>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </section>
       </section>
