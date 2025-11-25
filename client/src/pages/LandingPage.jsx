@@ -1,7 +1,5 @@
-// src/pages/LandingPage.jsx
-// public marketing / landing page for Venus
-
-import { useNavigate } from "react-router-dom";
+// client/src/pages/LandingPage.jsx
+import { useNavigate } from 'react-router-dom';
 
 function LandingPage() {
   const navigate = useNavigate();
@@ -15,32 +13,26 @@ function LandingPage() {
 
       <section className="landing-body card">
         <p>
-          venus is a focused savings workspace for people who are tired of
-          watching their “rent money” turn into “oops, i ordered food again.”
+          venus is a lockable savings app designed to stop “accidental” spending
+          of money that was supposed to be for rent, flights, or emergencies.
+          you choose a goal, lock an amount, and practice leaving it alone.
         </p>
 
         <p>
-          you choose a goal, set an amount, lock it until a date, and practice
-          leaving it alone. every goal has a name, a lock date, and a status,
-          so you can see exactly where your money is supposed to be going.
-        </p>
-
-        <p>
-          venus is designed for small, intentional amounts you can commit to
-          right now – flights, security deposits, emergency buffers, passion
-          projects, whatever you&apos;re building toward.
+          this prototype uses a secure login and a real database behind the
+          scenes – but no real bank accounts – so you can safely test your
+          saving habits.
         </p>
 
         <div className="cta-buttons">
-          <button onClick={() => navigate("/auth")}>
-            open your venus workspace
+          <button onClick={() => navigate('/auth')}>
+            start a savings goal
           </button>
         </div>
 
         <p className="landing-footnote">
-          current version runs in a private practice environment on your
-          device. balances and goals here are examples you control – no
-          external bank accounts are connected.
+          later, this flow can grow into a full fintech product with real
+          deposits, community investment, and ethical savings baked in.
         </p>
       </section>
     </main>

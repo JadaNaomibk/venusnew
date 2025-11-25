@@ -1,23 +1,24 @@
-// src/api.js
+// client/src/api.js
 // tiny helper to talk to the backend API.
 
-const API_BASE_URL = 'http://localhost:5001/api'
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 
 export async function apiRequest(path, options = {}) {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include', // send cookies like authToken
     headers: {
       'Content-Type': 'application/json',
-      ...(options.headers || {}),
+      ...(options.headers || {})
     },
-    ...options,
-  })
+    ...options
+  });
 
-  const data = await res.json().catch(() => ({}))
+  const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    throw new Error(data.message || 'request failed.')
+    throw new Error(data.message || 'request failed.');
   }
 
-  return data
+  return data;
 }

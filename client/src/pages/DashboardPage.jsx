@@ -1,249 +1,171 @@
-// src/pages/DashboardPage.jsx
+// client/src/pages/DashboardPage.jsx
 // dashboard page for Venus.
-// this version still uses ONLY FRONTEND STATE (localStorage)
-// for savings goals – no real money, no real bank connections.
+// this version uses the backend API + MongoDB to store savings goals.
 
-import { useState, useEffect } from "react";
-// you can wire this in later if you want to use it
-// import { CheckUploadBox } from "../components/CheckUploadBox.jsx";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { apiRequest } from '../api.js';
 
 function DashboardPage() {
-  // -----------------------------
-  // 1. state for the savings form
-  // -----------------------------
-  const [label, setLabel] = useState("");          // goal name (ex: "Puerto Rico trip")
-  const [amount, setAmount] = useState("");        // how much to lock right now
-  const [targetAmount, setTargetAmount] = useState(""); // total goal (ex: 5000)
-  const [lockUntil, setLockUntil] = useState("");  // date string like "2025-12-31"
+  const [label, setLabel] = useState('');
+  const [amount, setAmount] = useState('');
+  const [lockUntil, setLockUntil] = useState('');
   const [emergencyAllowed, setEmergencyAllowed] = useState(true);
 
-  // -----------------------------
-  // 2. state for the goals list
-  // -----------------------------
-  const [goals, setGoals] = useState([]);          // array of goal objects
-  const [message, setMessage] = useState("");      // success / warning text for the user
+  const [goals, setGoals] = useState([]);
+  const [message, setMessage] = useState('');
+  const [loadingGoals, setLoadingGoals] = useState(true);
 
-  // how many emergency withdraws the user has done (across all goals)
-  const [withdrawEvents, setWithdrawEvents] = useState(0);
+  const navigate = useNavigate();
 
-  // -------------------------------------------
-  // 3. load any saved goals + withdraw count
-  //    from localStorage on first render
-  // -------------------------------------------
+  // load goals on mount
   useEffect(() => {
-    try {
-      const storedGoals = localStorage.getItem("venusGoals");
-      if (storedGoals) {
-        const parsed = JSON.parse(storedGoals);
-        if (Array.isArray(parsed)) {
-          setGoals(parsed);
+    let cancelled = false;
+
+    async function loadGoals() {
+      setLoadingGoals(true);
+      setMessage('');
+
+      try {
+        const data = await apiRequest('/goals', { method: 'GET' });
+        if (!cancelled) {
+          setGoals(Array.isArray(data.goals) ? data.goals : []);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setMessage(err.message);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingGoals(false);
         }
       }
-    } catch (err) {
-      console.error("error reading venusGoals from localStorage:", err);
     }
 
-    try {
-      const storedCount = localStorage.getItem("venusWithdrawEvents");
-      if (storedCount != null) {
-        const parsedCount = Number(storedCount);
-        if (!Number.isNaN(parsedCount)) {
-          setWithdrawEvents(parsedCount);
-        }
-      }
-    } catch (err) {
-      console.error("error reading withdrawEvents from localStorage:", err);
-    }
+    loadGoals();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // ----------------------------------------------------
-  // 4. whenever "goals" changes, save them to storage
-  // ----------------------------------------------------
-  useEffect(() => {
-    try {
-      localStorage.setItem("venusGoals", JSON.stringify(goals));
-    } catch (err) {
-      console.error("error saving venusGoals to localStorage:", err);
-    }
-  }, [goals]);
-
-  // ----------------------------------------------------
-  // 5. whenever withdrawEvents changes, save that too
-  // ----------------------------------------------------
-  useEffect(() => {
-    try {
-      localStorage.setItem("venusWithdrawEvents", String(withdrawEvents));
-    } catch (err) {
-      console.error("error saving withdrawEvents to localStorage:", err);
-    }
-  }, [withdrawEvents]);
-
-  // ------------------------------------------------
-  // helper: build one goal object in a consistent way
-  // ------------------------------------------------
-  function createGoalObject({ label, amount, targetAmount, lockUntil, emergencyAllowed }) {
-    const now = new Date();
-
-    const numericAmount = Number(amount);
-    // if no explicit target is given, treat the current amount as the target
-    const numericTarget = targetAmount
-      ? Number(targetAmount)
-      : numericAmount;
-
-    return {
-      id: String(now.getTime()) + "-" + Math.random().toString(16).slice(2),
-      label: String(label).trim(),
-      amount: numericAmount,          // how much is currently locked
-      targetAmount: numericTarget,    // full goal amount ("I want to reach 5000")
-      lockUntil,                      // date string from the input
-      createdAt: now.toISOString(),
-      status: "locked",               // "locked" or "withdrawn"
-      emergencyAllowed: !!emergencyAllowed,
-      emergencyUsed: false,           // becomes true if this goal was withdrawn
-    };
-  }
-
-  // ------------------------------------------------
-  // submit handler for the "create goal" form
-  // ------------------------------------------------
-  function handleCreateGoal(event) {
+  async function handleCreateGoal(event) {
     event.preventDefault();
-    setMessage("");
+    setMessage('');
 
-    // simple validation
     if (!label || !amount || !lockUntil) {
-      setMessage("please fill out all the fields first.");
+      setMessage('please fill out all the fields first.');
       return;
     }
 
     const numericAmount = Number(amount);
     if (Number.isNaN(numericAmount) || numericAmount <= 0) {
-      setMessage("amount must be a positive number.");
+      setMessage('amount must be a positive number.');
       return;
     }
 
-    let numericTarget = numericAmount;
-    if (targetAmount) {
-      numericTarget = Number(targetAmount);
-      if (Number.isNaN(numericTarget) || numericTarget <= 0) {
-        setMessage("target amount must be a positive number.");
-        return;
-      }
-    }
-
-    const newGoal = createGoalObject({
-      label,
-      amount: numericAmount,
-      targetAmount: numericTarget,
-      lockUntil,
-      emergencyAllowed,
-    });
-
-    // prepend new goal
-    setGoals((prev) => [newGoal, ...prev]);
-
-    // clear the form
-    setLabel("");
-    setAmount("");
-    setTargetAmount("");
-    setLockUntil("");
-    setEmergencyAllowed(true);
-
-    setMessage("new savings goal locked.");
-  }
-
-  // ------------------------------------------------
-  // click handler for "emergency withdraw" button
-  // global limit: if you use emergency withdraw too many times,
-  // you start getting blocked + warned (penalty vibe).
-  // ------------------------------------------------
-  function handleEmergencyWithdraw(goalId) {
-    setMessage("");
-
-    // hard limit: after 3 emergency withdraws, we block more
-    if (withdrawEvents >= 3) {
-      setMessage(
-        "you've reached the emergency withdraw limit. in a real app, more early unlocks would trigger penalty fees."
-      );
-      return;
-    }
-
-    let didWithdraw = false;
-
-    setGoals((prevGoals) =>
-      prevGoals.map((goal) => {
-        if (goal.id !== goalId) return goal;
-
-        // already withdrawn? don't double-count
-        if (goal.status === "withdrawn") {
-          return goal;
-        }
-
-        didWithdraw = true;
-
-        return {
-          ...goal,
-          status: "withdrawn",
-          emergencyUsed: true,
-        };
-      })
-    );
-
-    // only update the counter if we actually changed a goal
-    if (didWithdraw) {
-      setWithdrawEvents((prevCount) => {
-        const newCount = prevCount + 1;
-
-        if (newCount > 2) {
-          setMessage(
-            "warning: you've used emergency withdraw multiple times. in a real app, future unlocks would incur a penalty percentage."
-          );
-        } else {
-          setMessage("goal withdrawn from lock.");
-        }
-
-        return newCount;
+    try {
+      const data = await apiRequest('/goals', {
+        method: 'POST',
+        body: JSON.stringify({
+          label,
+          amount: numericAmount,
+          lockUntil,
+          emergencyAllowed
+        })
       });
+
+      if (data.goal) {
+        setGoals((prev) => [data.goal, ...prev]);
+      }
+
+      setLabel('');
+      setAmount('');
+      setLockUntil('');
+      setEmergencyAllowed(true);
+
+      setMessage('new savings goal locked.');
+    } catch (err) {
+      setMessage(err.message);
     }
   }
 
-  // ------------------------------------------------
-  // helper: compute total locked amount (only locked goals)
-  // ------------------------------------------------
+  async function handleEmergencyWithdraw(goalId) {
+    setMessage('');
+
+    try {
+      const data = await apiRequest(`/goals/${goalId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'emergency-withdraw' })
+      });
+
+      if (data.goal) {
+        setGoals((prev) =>
+          prev.map((g) => (g.id === data.goal.id ? data.goal : g))
+        );
+      }
+
+      setMessage(
+        'goal withdrawn from lock (demo only, no real money is moving).'
+      );
+    } catch (err) {
+      setMessage(err.message);
+    }
+  }
+
+  async function handleDeleteGoal(goalId) {
+    setMessage('');
+
+    try {
+      await apiRequest(`/goals/${goalId}`, {
+        method: 'DELETE'
+      });
+
+      setGoals((prev) => prev.filter((g) => g.id !== goalId));
+      setMessage('goal deleted.');
+    } catch (err) {
+      setMessage(err.message);
+    }
+  }
+
+  async function handleLogout() {
+    try {
+      await apiRequest('/auth/logout', { method: 'POST' });
+    } catch (_) {
+      // ignore errors on logout
+    } finally {
+      setGoals([]);
+      navigate('/auth');
+    }
+  }
+
   const totalLocked = goals
-    .filter((goal) => goal.status === "locked")
-    .reduce((sum, goal) => sum + (Number(goal.amount) || 0), 0);
+    .filter((goal) => goal.status === 'locked')
+    .reduce((sum, goal) => sum + Number(goal.amount || 0), 0);
+
+  const totalWithdrawn = goals
+    .filter((goal) => goal.status === 'withdrawn')
+    .reduce((sum, goal) => sum + Number(goal.amount || 0), 0);
 
   return (
     <main className="dashboard">
       <header className="dashboard-header">
         <p
           style={{
-            textAlign: "center",
-            marginTop: "0.5rem",
-            color: "var(--text-muted)",
+            textAlign: 'center',
+            marginTop: '0.5rem',
+            color: 'var(--text-muted)'
           }}
         >
-          logged in
+          logged in (demo mode – no real bank connections)
         </p>
 
         <h1>your venus dashboard</h1>
 
         <button
-          onClick={() => {
-            // clear local demo data on logout
-            localStorage.removeItem("venusGoals");
-            localStorage.removeItem("venusWithdrawEvents");
-
-            fetch("http://localhost:5001/api/auth/logout", {
-              method: "POST",
-              credentials: "include",
-            }).finally(() => {
-              window.location.href = "/auth";
-            });
-          }}
+          onClick={handleLogout}
           className="secondary-button"
-          style={{ marginTop: "1rem" }}
+          style={{ marginTop: '1rem' }}
         >
           logout
         </button>
@@ -253,7 +175,6 @@ function DashboardPage() {
         </p>
       </header>
 
-      {/* summary cards at the top */}
       <section className="summary-bar">
         <div className="summary-item">
           <span className="summary-label">goals locked</span>
@@ -261,23 +182,19 @@ function DashboardPage() {
         </div>
         <div className="summary-item">
           <span className="summary-label">total locked</span>
-          <span className="summary-value">${totalLocked.toFixed(2)}</span>
+          <span className="summary-value">
+            ${totalLocked.toFixed(2)}
+          </span>
         </div>
         <div className="summary-item">
-          <span className="summary-label">emergency withdraws</span>
-          <span className="summary-value">{withdrawEvents}</span>
+          <span className="summary-label">total withdrawn</span>
+          <span className="summary-value">
+            ${totalWithdrawn.toFixed(2)}
+          </span>
         </div>
       </section>
 
-      {withdrawEvents >= 2 && (
-        <p className="dashboard-warning">
-          you&apos;ve used emergency withdraw more than once. in a real app,
-          future early unlocks would be limited or charged a fee to protect your savings.
-        </p>
-      )}
-
       <section className="dashboard-grid">
-        {/* form column */}
         <section className="dashboard-section">
           <h2>create a savings goal</h2>
 
@@ -294,7 +211,7 @@ function DashboardPage() {
             </label>
 
             <label>
-              amount to lock now
+              amount to lock
               <input
                 type="number"
                 value={amount}
@@ -302,18 +219,6 @@ function DashboardPage() {
                 min="1"
                 step="0.01"
                 required
-              />
-            </label>
-
-            <label>
-              target amount (total goal)
-              <input
-                type="number"
-                value={targetAmount}
-                onChange={(e) => setTargetAmount(e.target.value)}
-                min="1"
-                step="0.01"
-                placeholder="ex: 5000"
               />
             </label>
 
@@ -340,85 +245,79 @@ function DashboardPage() {
           </form>
         </section>
 
-        {/* goals list column */}
         <section className="dashboard-section">
           <h2>your savings goals</h2>
 
-          {goals.length === 0 && (
+          {loadingGoals && (
+            <p className="empty-state">loading your goals...</p>
+          )}
+
+          {!loadingGoals && goals.length === 0 && (
             <p className="empty-state">
-              you don&apos;t have any locked goals yet. start with something tiny.
+              you don&apos;t have any locked goals yet. start with something
+              tiny.
             </p>
           )}
 
           <ul className="goals-list">
-            {goals.map((goal) => {
-              const target = Number(goal.targetAmount) || Number(goal.amount) || 0;
-              const current = Number(goal.amount) || 0;
-              const progress =
-                target > 0
-                  ? Math.min(100, Math.round((current / target) * 100))
-                  : 0;
+            {goals.map((goal) => (
+              <li key={goal.id} className="goal-card">
+                <div>
+                  <h3>{goal.label}</h3>
+                  <p className="goal-amount">
+                    ${Number(goal.amount || 0).toFixed(2)}
+                  </p>
+                  <p className="goal-meta">
+                    lock until: {goal.lockUntil}
+                  </p>
+                </div>
 
-              return (
-                <li key={goal.id} className="goal-card">
-                  <div className="goal-card-main">
-                    <h3>{goal.label}</h3>
-                    <p className="goal-amount">${current.toFixed(2)} locked</p>
-                    {target > 0 && (
-                      <p className="goal-meta">
-                        goal: ${target.toFixed(2)} &nbsp; • &nbsp; lock until:{" "}
-                        {goal.lockUntil}
-                      </p>
-                    )}
+                <div className="goal-status-block">
+                  <span
+                    className={
+                      'status-pill ' +
+                      (goal.status === 'locked' ? 'locked' : 'withdrawn')
+                    }
+                  >
+                    {goal.status}
+                  </span>
 
-                    {/* progress bar + text like "$25 out of $5000 saved (0.5%)" */}
-                    <div className="goal-progress">
-                      <div className="goal-progress-bar">
-                        <div
-                          className="goal-progress-fill"
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-
-                      {target > 0 && (
-                        <p className="goal-progress-text">
-                          ${current.toFixed(2)} out of ${target.toFixed(2)} saved (
-                          {progress}%)
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="goal-status-block">
-                    <span
-                      className={
-                        "status-pill " +
-                        (goal.status === "locked" ? "locked" : "withdrawn")
-                      }
-                    >
-                      {goal.status}
+                  {goal.emergencyAllowed && (
+                    <span className="status-pill emergency">
+                      {goal.emergencyUsed
+                        ? 'emergency used'
+                        : 'emergency allowed'}
                     </span>
+                  )}
 
-                    {goal.emergencyAllowed && (
-                      <span className="status-pill emergency">
-                        {goal.emergencyUsed ? "emergency used" : "emergency allowed"}
-                      </span>
-                    )}
+                  {goal.withdrawCount > 0 && (
+                    <span className="status-pill warning">
+                      withdrawals: {goal.withdrawCount}
+                    </span>
+                  )}
 
-                    {goal.status === "locked" && (
+                  <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
+                    {goal.status === 'locked' && (
                       <button
                         type="button"
                         className="secondary-button"
                         onClick={() => handleEmergencyWithdraw(goal.id)}
-                        disabled={withdrawEvents >= 3}
                       >
                         emergency withdraw
                       </button>
                     )}
+
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => handleDeleteGoal(goal.id)}
+                    >
+                      delete
+                    </button>
                   </div>
-                </li>
-              );
-            })}
+                </div>
+              </li>
+            ))}
           </ul>
         </section>
       </section>
